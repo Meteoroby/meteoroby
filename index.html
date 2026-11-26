@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>@Meteoroby - Nowcasting Visibile/IR 48h & DWD ICON-EU</title>
+  <script src="https://unpkg.com"></script>
+  <link href="https://unpkg.com" rel="stylesheet" />
+  <!-- Librerie leggere per esportazione universale GIF e MP4 (H.264) -->
+  <script src="https://unpkg.com"></script>
+  <script src="https://unpkg.com"></script>
+  <style>
+    body, html {
+      margin: 0; padding: 0; height: 100%; width: 100%;
+      background: #041038;
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      color: #fff; overflow: hidden;
+      overscroll-behavior: none;
+    }
+    #map {
+      width: 100%; height: 100%;
+      touch-action: none;
+    }
+
+    /* Barra superiore sinottica */
+    .top-bar {
+      position: absolute; top: 0; left: 0; right: 0;
+      background: rgba(0, 0, 0, 0.92);
+      padding: 7px 12px;
+      display: flex; justify-content: space-between; align-items: center;
+      font-family: 'Consolas', 'Courier New', monospace;
+      font-size: 11.5px; font-weight: bold;
+      border-bottom: 1px solid #1e355e;
+      z-index: 10; letter-spacing: 0.2px;
+    }
+
+    /* Pulsanti Zoom & Navigazione in alto a sinistra */
+    .nav-controls {
+      position: absolute; top: 44px; left: 10px;
+      display: flex; flex-direction: column; gap: 6px;
+      z-index: 11;
+    }
+    .nav-btn {
+      width: 36px; height: 36px;
+      background: rgba(6, 12, 28, 0.92);
+      color: #fff; border: 1px solid #2b4570;
+      border-radius: 6px; font-size: 17px; font-weight: bold;
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer; box-shadow: 0 3px 10px rgba(0,0,0,0.6);
+      padding: 0; user-select: none;
+    }
+    .nav-btn:active { transform: scale(0.94); background: #1565c0; }
+    .nav-btn.small-txt { font-size: 11px; font-family: monospace; }
+
+    /* Tasto Nascondi/Mostra controlli */
+    .toggle-ui-btn {
+      position: absolute; top: 44px; right: 10px;
+      width: 36px; height: 36px;
+      background: rgba(6, 12, 28, 0.92);
+      color: #ffea00; border: 1px solid #2b4570;
+      border-radius: 6px; font-size: 16px;
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer; z-index: 12;
+      box-shadow: 0 3px 10px rgba(0,0,0,0.6);
+    }
+
+    /* Scala termica IR (Cloud Top Temp °C) */
+    .ir-legend {
+      position: absolute; top: 88px; right: 10px;
+      background: rgba(6, 12, 28, 0.88);
+      border: 1px solid #2b4570;
+      padding: 5px 8px; border-radius: 6px;
+      z-index: 9; font-family: monospace; font-size: 10px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.6);
+      pointer-events: none;
+    }
+    .ir-bar {
+      width: 140px; height: 7px; border-radius: 3px; margin: 3px 0 2px 0;
+      background: linear-gradient(to right, #37474f, #90caf9, #fff59d, #ffca28, #ff6f00, #d50000);
+    }
+    .ir-labels { display: flex; justify-content: space-between; color: #cfd8dc; font-size: 9px; }
+
+    /* Watermark @Meteoroby + Disclaimer in basso a sinistra */
+    .brand-disclaimer {
+      position: absolute; bottom: 88px; left: 10px;
+      background: rgba(4, 12, 32, 0.82);
+      border-left: 3px solid #ffea00;
+      padding: 5px 9px;
+      border-radius: 0 5px 5px 0;
+      z-index: 9; pointer-events: none;
+      max-width: 85vw;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.6);
+      transition: bottom 0.2s;
+    }
+    .brand-disclaimer.ui-hidden { bottom: 14px; }
+    .brand-tag {
+      font-size: 13px; font-weight: 800;
+      color: #ffea00; letter-spacing: 0.4px;
+      text-shadow: 1px 1px 2px #000;
+      display: block; margin-bottom: 1px;
+    }
+    .disclaimer-text {
+      font-size: 9.5px; line-height: 1.25;
+      color: rgba(235, 242, 255, 0.88);
+      text-shadow: 1px 1px 1px #000;
+    }
+
+    /* Pannello controlli in basso */
+    .controls {
+      position: absolute; bottom: 10px; left: 50%; transform: translateX(-50%);
+      background: rgba(6, 12, 28, 0.95);
+      padding: 8px 10px; border-radius: 8px;
+      border: 1px solid #2b4570;
+      display: flex; flex-wrap: wrap; gap: 6px; align-items: center; justify-content: center;
+      z-index: 10; box-shadow: 0 6px 25px rgba(0,0,0,0.85);
+      width: 95vw; max-width: 860px;
+    }
+
+    .controls button, .controls select {
+      background: #1565c0; color: white; border: 1px solid #2979ff;
+      padding: 5px 8px; border-radius: 4px; cursor: pointer;
+      font-weight: 600; font-size: 11px;
+    }
+    .controls button.active { background: #d32f2f; border-color: #ff5252; }
+    .controls button.snap { background: #00897b; border-color: #4db6ac; }
+    .controls button.gif-btn { background: #e65100; border-color: #ff9800; }
+    .controls button.rec { background: #6a1b9a; border-color: #ab47bc; }
+    .controls button.rec.recording { background: #d50000; animation: pulse 1s infinite; }
+    .controls button.bolt-btn { background: #ffb300; color: #000; border-color: #ffe57f; }
+    .controls button:disabled { opacity: 0.6; cursor: wait; }
+
+    @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
+
+    input[type="range"] { width: 135px; cursor: pointer; accent-color: #ffea00; }
+    label { display: flex; align-items: center; gap: 3px; font-size: 11px; cursor: pointer; user-select: none; }
+
+    /* Centri Barici L (Rosso) & H (Blu) */
+    .pressure-center {
+      text-align: center; pointer-events: none;
+      font-family: Arial, Helvetica, sans-serif; font-weight: 900;
+      transform: translate(-50%, -50%);
+    }
+    .pressure-center .letter {
+      font-size: 25px; line-height: 0.9;
+      text-shadow: -1.5px -1.5px 0 #fff, 1.5px -1.5px 0 #fff, -1.5px 1.5px 0 #fff, 1.5px 1.5px 0 #fff, 0 2px 6px #000;
+    }
+    .pressure-center .val {
+      color: #fff; border: 1px solid #fff;
+      padding: 0px 4px; border-radius: 2px;
+      font-size: 10.5px; margin-top: 2px; display: inline-block;
+    }
+    .low-style .letter { color: #ff1744; }
+    .low-style .val { background: #d50000; }
+    .high-style .letter { color: #2979ff; }
+    .high-style .val { background: #1565c0; }
+
+    /* Etichette parametri extra ICON-EU */
+    .param-badge {
+      background: rgba(5, 10, 24, 0.78);
+      border: 1px solid rgba(128, 216, 255, 0.6);
+      color: #80d8ff;
+      padding: 1px 4px; border-radius: 3px;
+      font-family: monospace; font-size: 10px; font-weight: bold;
+      pointer-events: none; white-space: nowrap;
+    }
+    .param-high { border-color: #ff6d00; color: #ffea00; background: rgba(60, 15, 0, 0.85); }
+
+    /* Croci Fulmini */
+    .lightning-bolt {
+      color: #ffea00; font-family: monospace; font-weight: 900; font-size: 15px;
+      text-shadow: 0 0 4px #ff6d00, 1px 1px 0 #000; pointer-events: none;
+      animation: fadeBolt 12s forwards;
+    }
+    @keyframes fadeBolt {
+      0% { opacity: 1; transform: scale(1.25); }
+      20% { opacity: 1; transform: scale(1); }
+      100% { opacity: 0; }
+    }
+
+    .maplibregl-ctrl-attrib { display: none !important; }
+  </style>
+</head>
+<body>
+
+  <div class="top-bar">
+    <span id="timestamp-display">Caricamento...</span>
+    <span id="channel-badge" style="color:#ffea00;">AUTO (VIS/IR)</span>
+  </div>
+
+  <!-- Pulsanti Zoom & Centratura Vista -->
+  <div id="nav-controls" class="nav-controls">
+    <button id="zoom-in-btn" class="nav-btn" title="Zoom Avanti">+</button>
+    <button id="zoom-out-btn" class="nav-btn" title="Zoom Indietro">−</button>
+    <button id="reset-view-btn" class="nav-btn small-txt" title="Centra su Italia">IT</button>
+    <button id="reset-north-btn" class="nav-btn small-txt" title="Nord">N↑</button>
+  </div>
+
+  <!-- Tasto Nascondi/Mostra Menu -->
+  <button id="toggle-ui-btn" class="toggle-ui-btn" title="Nascondi/Mostra Controlli">👁</button>
+
+  <div id="ir-legend" class="ir-legend" style="display:none;">
+    <div>IR Cloud Top (°C)</div>
+    <div class="ir-bar"></div>
+    <div class="ir-labels"><span>-20°</span><span>-40°</span><span>-55°</span><span>-70°C</span></div>
+  </div>
+
+  <div id="brand-box" class="brand-disclaimer">
+    <span class="brand-tag">@Meteoroby</span>
+    <span class="disclaimer-text">
+      Analisi sinottica e nowcasting a scopo informativo. Sat: NASA GIBS / EUMETSAT | Modello: DWD ICON-EU (Open-Meteo) | © OpenStreetMap © CARTO. Per allerte ufficiali: Protezione Civile.
+    </span>
+  </div>
+
+  <div id="map"></div>
+
+  <div id="controls-bar" class="controls">
+    <button id="play-btn">▶ Play</button>
+    <select id="history-hours">
+      <option value="12">12h</option>
+      <option value="24" selected>24h</option>
+      <option value="48">48h</option>
+    </select>
+    <input type="range" id="time-slider" min="0" max="0" value="0" />
+    <select id="channel-mode">
+      <option value="auto" selected>Auto (VIS/IR)</option>
+      <option value="vis">Visibile</option>
+      <option value="ir">Infrarosso</option>
+    </select>
+    <select id="model-param">
+      <option value="none" selected>Solo Isobare</option>
+      <option value="cape">CAPE (J/kg)</option>
+      <option value="z500">Geop. 500 hPa</option>
+      <option value="w850">Vento 850 (kt)</option>
+    </select>
+    <label><input type="checkbox" id="toggle-isobars" checked /> Isobare</label>
+    <button id="sim-bolt-btn" class="bolt-btn">⚡ Fulmini</button>
+    <button id="jpg-btn" class="snap">📷 JPG</button>
+    <button id="gif-btn" class="gif-btn">🎞 GIF</button>
+    <button id="mp4-btn" class="rec">🎬 MP4</button>
+  </div>
+
+  <script>
+    const DEFAULT_CENTER = [11.8, 43.2];
+    const DEFAULT_ZOOM = 5.5;
+
+    const map = new maplibregl.Map({
+      container: 'map',
+      preserveDrawingBuffer: true,
+      dragPan: true,
+      scrollZoom: true,
+      touchZoomRotate: true,
+      doubleClickZoom: true,
+      style: {
