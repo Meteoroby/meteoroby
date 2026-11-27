@@ -10,9 +10,10 @@
 .brandlink{pointer-events:auto;text-decoration:none}.brandlink:hover{text-decoration:underline}.brandlink:focus-visible{outline:2px solid #85d4ff;outline-offset:3px;border-radius:2px}.footlinks a{font-weight:600;text-decoration:underline;text-underline-offset:2px}.credits a{white-space:normal}footer a:focus-visible{outline:2px solid #85d4ff;outline-offset:2px}
 
 #eye{width:84px;min-height:40px;line-height:1.15;padding:5px 7px;white-space:normal;text-align:center}header{max-width:calc(100vw - 112px)}
+#version-update{pointer-events:auto;display:inline-block;margin:5px 0 0;font-size:11px;color:#d6efff;border:1px solid #6287a4;border-radius:5px;padding:4px 7px;background:#153950;text-decoration:none}#version-update[hidden]{display:none!important}
 </style>
 <canvas id="map" aria-label="Mappa satellitare interattiva dell’Italia"></canvas>
-<canvas id="windmap" aria-hidden="true"></canvas><header><h1><a class="brandlink" href="https://meteoroby.com/" target="_blank" rel="noopener" title="Visita il sito ufficiale Meteoroby"><strong>Meteoroby</strong></a> · Nowcasting Italia <small style="font-size:10px;color:#9cc8e9">V3.1.2b TEST</small></h1><div id="stamp">Caricamento satellite…</div><div id="model">Caricamento ICON-EU…</div><div id="streetnote" hidden></div><div id="obs" aria-live="off"></div><div id="radarkey" hidden><b>Radar · dBZ</b> · <a style="pointer-events:auto" href="https://www.rainviewer.com/api/color-schemes.html" target="_blank" rel="noopener">Scala Universal Blue</a></div><div id="likey" hidden><i></i> LI AFA · area illuminata (non punti al suolo)</div><img id="legend" hidden alt="Scala IR ufficiale EUMETSAT"><div id="modelkeys" hidden><div id="zkey" hidden><b>Z500 · dam</b> <span id="zkeynote"></span><div class="scaleitems"><span><i style="--c:#9b91ff"></i>500</span><span><i style="--c:#78baff"></i>520</span><span><i style="--c:#50e4e8"></i>540</span><span><i style="--c:#b2e7a4"></i>560</span><span><i style="--c:#ffd18b"></i>580</span><span><i style="--c:#ff9e91"></i>600</span></div></div><div id="wkey" hidden><b>Vento 850 hPa · kt</b> <span id="wkeynote"></span><div class="windlegend" id="windlegend"></div><div class="layernote">Frecce verso cui soffia il vento · campo interpolato</div></div></div></header>
+<canvas id="windmap" aria-hidden="true"></canvas><header><h1><a class="brandlink" href="https://meteoroby.com/" target="_blank" rel="noopener" title="Visita il sito ufficiale Meteoroby"><strong>Meteoroby</strong></a> · Nowcasting Italia <small style="font-size:10px;color:#9cc8e9">V3.1.2c TEST</small></h1><a id="version-update" hidden role="status" aria-live="polite">Nuova versione disponibile · Aggiorna</a><div id="stamp">Caricamento satellite…</div><div id="model">Caricamento ICON-EU…</div><div id="streetnote" hidden></div><div id="obs" aria-live="off"></div><div id="radarkey" hidden><b>Radar · dBZ</b> · <a style="pointer-events:auto" href="https://www.rainviewer.com/api/color-schemes.html" target="_blank" rel="noopener">Scala Universal Blue</a></div><div id="likey" hidden><i></i> LI AFA · area illuminata (non punti al suolo)</div><img id="legend" hidden alt="Scala IR ufficiale EUMETSAT"><div id="modelkeys" hidden><div id="zkey" hidden><b>Z500 · dam</b> <span id="zkeynote"></span><div class="scaleitems"><span><i style="--c:#9b91ff"></i>500</span><span><i style="--c:#78baff"></i>520</span><span><i style="--c:#50e4e8"></i>540</span><span><i style="--c:#b2e7a4"></i>560</span><span><i style="--c:#ffd18b"></i>580</span><span><i style="--c:#ff9e91"></i>600</span></div></div><div id="wkey" hidden><b>Vento 850 hPa · kt</b> <span id="wkeynote"></span><div class="windlegend" id="windlegend"></div><div class="layernote">Frecce verso cui soffia il vento · campo interpolato</div></div></div></header>
 <button class="eye" id="eye" aria-label="Nascondi comandi" aria-pressed="false" title="Nascondi pannelli e comandi">Nascondi comandi</button>
 <nav><button id="plus" aria-label="Aumenta zoom">＋</button><button id="minus" aria-label="Riduci zoom">−</button><button id="italy" title="Inquadra tutta l’Italia e le isole" aria-label="Inquadra tutta l’Italia e le isole">IT</button><button id="rimini" title="Zoom su Rimini Marebello" aria-label="Zoom su Rimini Marebello">RN</button><button id="north" title="Ripristina il nord">N↑</button></nav>
 <main class="panel"><div class="row"><button id="play">▶ Play</button><select id="hours" aria-label="Durata cronologia"><option selected>2</option><option>3</option><option>12</option><option>24</option><option>48</option></select><label for="hours">ore</label><input id="slider" type="range" aria-label="Fotogramma satellitare" min="0" max="48" value="48"><select id="channel" aria-label="Canale satellitare"><option value="auto">Auto VIS/IR</option><option value="vis">VIS HRFI 0,6</option><option value="ir">IR HRFI 10,5</option><option value="cloudphase">Cloud Phase RGB</option><option value="cloudtype">Cloud Type RGB</option><option value="daymicro" disabled>Day Microphysics (verifica)</option><option value="convection" disabled>Convection RGB (verifica)</option><option value="nightmicro" disabled>Night Microphysics (verifica)</option></select></div>
@@ -2142,4 +2143,43 @@ for(const kind of ['jpg','gif','mp4'])$(kind).onclick=()=>output(kind);
 $('src').href=(location.protocol==='file:'?location.href:location.href.split('#')[0].split('?')[0]);$('legend').onload=syncLegend;$('legend').onerror=()=>{$('legend').hidden=true};$('legend').src=legendURL;
 new ResizeObserver(([e])=>document.documentElement.style.setProperty('--foot',e.target.offsetHeight+'px')).observe(document.querySelector('footer'));$('update').onclick=async()=>{if(busy)return;pause();$('update').disabled=true;try{await Promise.all([catalog(),radarCatalog()]);await rebuild();}finally{$('update').disabled=false}};resize();home();window.addEventListener('resize',()=>{resize();refreshView()});
 (async()=>{const inputs=[...document.querySelectorAll('.panel button,.panel select,.panel input')];inputs.forEach(el=>el.disabled=true);loadModel();await Promise.all([catalog(),radarCatalog()]);await rebuild();inputs.forEach(el=>el.disabled=false)})();
-</script></html>
+</script>
+<script id="version-check">
+/* Verifica solo il documento HTML. Non tocca cache meteo, dati o animazioni. */
+(()=>{
+ const link=document.getElementById('version-update');
+ const local=document.querySelector('header h1 small')?.textContent.match(/\bV([\d.]+[a-z]?)\b/i)?.[1];
+ if(!link||!local||!/^https?:$/.test(location.protocol))return;
+ let lastCheck=0,checking=false;
+ function newer(a,b){
+  const parse=v=>{const m=/^(\d+(?:\.\d+)*)([a-z]?)$/i.exec(v);return m?[m[1].split('.').map(Number),m[2].toLowerCase()]:null};
+  const x=parse(a),y=parse(b);if(!x||!y)return false;
+  for(let i=0;i<Math.max(x[0].length,y[0].length);i++){const d=(x[0][i]||0)-(y[0][i]||0);if(d)return d>0}
+  return x[1]>y[1];
+ }
+ async function check(){
+  if(checking||document.hidden||Date.now()-lastCheck<300000)return;
+  checking=true;lastCheck=Date.now();
+  const controller=new AbortController(),timeout=setTimeout(()=>controller.abort(),10000);
+  try{
+   const url=new URL('index.html',location.href);url.searchParams.set('_check',String(Date.now()));
+   const response=await fetch(url,{cache:'no-store',signal:controller.signal,headers:{Range:'bytes=0-16383'}});
+   if(!response.ok)return;
+   let prefix='';const reader=response.body?.getReader();
+   if(reader){const decoder=new TextDecoder();try{while(prefix.length<16384){const {done,value}=await reader.read();if(done)break;prefix+=decoder.decode(value,{stream:true});if(/<\/h1>/i.test(prefix))break}}finally{await reader.cancel().catch(()=>{})}}
+   else prefix=(await response.text()).slice(0,16384);
+   const title=prefix.match(/<header\b[^>]*>\s*<h1\b[^>]*>([\s\S]*?)<\/h1>/i)?.[1];
+   const remote=title?.match(/<small\b[^>]*>\s*V([\d.]+[a-z]?)\b/i)?.[1];
+   if(remote&&newer(remote,local)){
+    const next=new URL(location.href);next.searchParams.set('v',remote);next.searchParams.set('_refresh',String(Date.now()));
+    link.href=next.href;link.textContent='Nuova versione V'+remote+' · Aggiorna';link.hidden=false;
+   }
+  }catch{/* Offline, pubblicazione in corso o verifica non disponibile: nessuna interruzione. */}
+  finally{clearTimeout(timeout);checking=false}
+ }
+ link.addEventListener('click',event=>{if(typeof busy!=='undefined'&&busy){event.preventDefault();link.textContent='Esportazione in corso · Aggiorna al termine'}});
+ window.addEventListener('focus',check);document.addEventListener('visibilitychange',check);
+ window.addEventListener('pageshow',check);check();
+})();
+</script>
+</html>
